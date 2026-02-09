@@ -10,7 +10,7 @@
 #
 # OPTION 2: Release Build with Signing (for distribution)
 # --------------------------------------------------------
-# 1. Go to https://codemagic.io and sign in
+# 1. Go to https://codemagic.io  and sign in
 # 2. Select your app → Click "Start new build" → Choose workflow
 # 3. For release builds, you need to set up code signing:
 #
@@ -108,8 +108,8 @@ workflows:
   #       - push
   #     branch_patterns:
   #       - pattern: main
-  #       - include: true
-  #       - source: true
+  #         include: true
+  #         source: true
   #   scripts:
   #     - name: Clean and setup
   #       script: |
@@ -141,14 +141,6 @@ workflows:
   #     - build/**/outputs/**/*.apk
   #     - build/**/outputs/**/*.aab
   #     - build/**/outputs/**/mapping.txt
-  #   publishing:
-  #     email:
-  #       recipients:
-  #         - zariouhx@gmail.com  # <-- REPLACE WITH YOUR EMAIL
-  #       notify:
-  #         success: true
-  #         failure: true
-apping.txt
   #   publishing:
   #     email:
   #       recipients:
