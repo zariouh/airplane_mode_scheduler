@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace "com.airplane.scheduler"
-    compileSdkVersion 34  // Updated from 33 to latest
+    compileSdkVersion 34
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -21,7 +21,7 @@ android {
     defaultConfig {
         applicationId "com.airplane.scheduler"
         minSdkVersion 21
-        targetSdkVersion 34  // Updated from 33 to latest
+        targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
@@ -35,6 +35,17 @@ android {
         }
         debug {
             signingConfig signingConfigs.debug
+        }
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {
+    implementation 'androidx.multidex:multidex:2.0.1'
+}            signingConfig signingConfigs.debug
         }
     }
 }
