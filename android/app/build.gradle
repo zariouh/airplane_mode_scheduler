@@ -1,40 +1,52 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
 android {
     namespace "com.airplane.scheduler"
-    compileSdk flutter.compileSdkVersion
+    compileSdkVersion 34  // Updated from 33 to latest
     ndkVersion flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17  // Updated from VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_17  // Updated from VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '17'  // Updated from '1.8'
+        jvmTarget = '17'
     }
 
     defaultConfig {
         applicationId "com.airplane.scheduler"
-        minSdkVersion flutter.minSdkVersion
-        targetSdkVersion flutter.targetSdkVersion
+        minSdkVersion 21
+        targetSdkVersion 34  // Updated from 33 to latest
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        multiDexEnabled true
     }
 
-android {
-    namespace "com.airplane.scheduler"
-    compileSdkVersion 33
-    ndkVersion flutter.ndkVersion
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
+        }
+        debug {
+            signingConfig signingConfigs.debug
+        }
     }
+}
 
-    kotlinOptions {
-        jvmTarget = '1.8'
-    }
+flutter {
+    source '../..'
+}
 
-    sourceSets {
+dependencies {
+    implementation 'androidx.multidex:multidex:2.0.1'
+    // Removed kotlin-stdlib-jdk7 - not needed with modern Kotlin (included automatically)
+}    sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
