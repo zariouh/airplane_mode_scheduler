@@ -27,15 +27,6 @@
 #      - CM_KEYSTORE_PASSWORD: Your keystore password
 #      - CM_KEY_ALIAS: Your key alias
 #      - CM_KEY_PASSWORD: Your key password
-#
-# GENERATING A KEYSTORE (if needed):
-# -----------------------------------
-# Run this command on your computer:
-# keytool -genkey -v -keystore airplane-scheduler.keystore -alias key -keyalg RSA -keysize 2048 -validity 10000
-#
-# Then convert to base64:
-# base64 -i airplane-scheduler.keystore | pbcopy  (Mac)
-# base64 -w 0 airplane-scheduler.keystore        (Linux)
 
 workflows:
   # =============================================================================
@@ -62,9 +53,12 @@ workflows:
           include: true
           source: true
     scripts:
-      - name: Set up local.properties
+      - name: Clean and setup
         script: |
-          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+          cd $CM_BUILD_DIR
+          rm -f android/local.properties
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          cat android/local.properties
       
       - name: Get Flutter packages
         script: |
@@ -76,6 +70,7 @@ workflows:
       
       - name: Build Debug APK
         script: |
+          flutter clean
           flutter build apk --debug \
             --build-name=1.0.0 \
             --build-number=$(date +%s)
@@ -113,12 +108,14 @@ workflows:
   #       - push
   #     branch_patterns:
   #       - pattern: main
-  #         include: true
-  #         source: true
+  #       - include: true
+  #       - source: true
   #   scripts:
-  #     - name: Set up local.properties
+  #     - name: Clean and setup
   #       script: |
-  #         echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+  #         cd $CM_BUILD_DIR
+  #         rm -f android/local.properties
+  #         echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
   #     
   #     - name: Get Flutter packages
   #       script: |
@@ -130,6 +127,7 @@ workflows:
   #     
   #     - name: Build Release APK
   #       script: |
+  #         flutter clean
   #         flutter build apk --release \
   #           --build-name=1.0.0 \
   #           --build-number=$(date +%s)
@@ -146,7 +144,15 @@ workflows:
   #   publishing:
   #     email:
   #       recipients:
-  #         - zariouhx@gmail.com # <-- REPLACE WITH YOUR EMAIL
+  #         - zariouhx@gmail.com  # <-- REPLACE WITH YOUR EMAIL
+  #       notify:
+  #         success: true
+  #         failure: true
+apping.txt
+  #   publishing:
+  #     email:
+  #       recipients:
+  #         - zariouhx@gmail.com  # <-- REPLACE WITH YOUR EMAIL
   #       notify:
   #         success: true
   #         failure: true
