@@ -1,0 +1,183 @@
+# Codemagic CI/CD Configuration for Airplane Mode Scheduler
+# 
+# SETUP INSTRUCTIONS:
+# ===================
+# 
+# OPTION 1: Debug Build (No signing required - for testing)
+# ----------------------------------------------------------
+# Just push to your repository and the debug workflow will run automatically.
+# Debug APKs don't require code signing.
+#
+# OPTION 2: Release Build with Signing (for distribution)
+# --------------------------------------------------------
+# 1. Go to https://codemagic.io and sign in
+# 2. Select your app → Click "Start new build" → Choose workflow
+# 3. For release builds, you need to set up code signing:
+#
+#    Method A: Using Codemagic UI (Recommended)
+#    - Go to Team Settings → Code signing identities → Android keystore
+#    - Click "Generate a new keystore" or upload your own
+#    - Note the "Reference name" (e.g., "airplane_scheduler_keystore")
+#    - Update the 'android_signing' section below with that reference name
+#
+#    Method B: Using Environment Variables
+#    - Go to App Settings → Environment variables
+#    - Add these variables:
+#      - CM_KEYSTORE: Base64 encoded keystore content
+#      - CM_KEYSTORE_PASSWORD: Your keystore password
+#      - CM_KEY_ALIAS: Your key alias
+#      - CM_KEY_PASSWORD: Your key password
+
+workflows:
+  # =============================================================================
+  # DEBUG WORKFLOW - Builds unsigned debug APK (no signing required)
+  # This is the easiest way to get started - just push and build!
+  # =============================================================================
+  android-debug:
+    name: Android Debug Build
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      vars:
+        PACKAGE_NAME: "com.airplane.scheduler"
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/.gradle/caches
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: "*"
+          include: true
+          source: true
+    scripts:
+      - name: Clean and setup
+        script: |
+          cd $CM_BUILD_DIR
+          rm -f android/local.properties
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          cat android/local.properties
+      
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      
+      - name: Analyze code
+        script: |
+          flutter analyze || true
+      
+      - name: Build Debug APK
+        script: |
+          flutter clean
+          flutter build apk --debug \
+            --build-name=1.0.0 \
+            --build-number=$(date +%s)
+    artifacts:
+      - build/**/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com  # <-- REPLACE WITH YOUR EMAIL
+        notify:
+          success: true
+          failure: true
+
+  # =============================================================================
+  # RELEASE WORKFLOW - Builds signed release APK/AAB (requires code signing)
+  # Uncomment and configure this after setting up your keystore in Codemagic
+  # =============================================================================
+  # android-release:
+  #   name: Android Release Build
+  #   max_build_duration: 120
+  #   environment:
+  #     flutter: stable
+  #     # OPTION 1: Reference keystore from Codemagic UI
+  #     # android_signing:
+  #     #   - airplane_scheduler_keystore  # <-- REPLACE with your keystore reference name
+  #     # OPTION 2: Use environment variables (set in Codemagic UI)
+  #     vars:
+  #       PACKAGE_NAME: "com.airplane.scheduler"
+  #   cache:
+  #     cache_paths:
+  #       - $FLUTTER_ROOT/.pub-cache
+  #       - $HOME/.gradle/caches
+  #   triggering:
+  #     events:
+  #       - push
+  #     branch_patterns:
+  #       - pattern: main
+  #       - include: true
+  #       - source: true
+  #   scripts:
+  #     - name: Clean and setup
+  #       script: |
+  #         cd $CM_BUILD_DIR
+  #         rm -f android/local.properties
+  #         echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+  #     
+  #     - name: Get Flutter packages
+  #       script: |
+  #         flutter pub get
+  #     
+  #     - name: Run tests
+  #       script: |
+  #         flutter test || true
+  #     
+  #     - name: Build Release APK
+  #       script: |
+  #         flutter clean
+  #         flutter build apk --release \
+  #           --build-name=1.0.0 \
+  #           --build-number=$(date +%s)
+  #     
+  #     - name: Build App Bundle (for Play Store)
+  #       script: |
+  #         flutter build appbundle --release \
+  #           --build-name=1.0.0 \
+  #           --build-number=$(date +%s)
+  #   artifacts:
+  #     - build/**/outputs/**/*.apk
+  #     - build/**/outputs/**/*.aab
+  #     - build/**/outputs/**/mapping.txt
+  #   publishing:
+  #     email:
+  #       recipients:
+  #         - your-email@example.com  # <-- REPLACE WITH YOUR EMAIL
+  #       notify:
+  #         success: true
+  #         failure: true
+apping.txt
+  #   publishing:
+  #     email:
+  #       recipients:
+  #         - your-email@example.com  # <-- REPLACE WITH YOUR EMAIL
+  #       notify:
+  #         success: true
+  #         failure: true
+
+  # =============================================================================
+  # GOOGLE PLAY PUBLISHING WORKFLOW (Advanced)
+  # Uncomment after setting up Google Play Console access
+  # =============================================================================
+  # android-play-store:
+  #   name: Publish to Google Play
+  #   max_build_duration: 120
+  #   environment:
+  #     flutter: stable
+  #     android_signing:
+  #       - airplane_scheduler_keystore  # <-- REPLACE with your keystore reference
+  #     groups:
+  #       - google_play  # Environment group with Google Play credentials
+  #   scripts:
+  #     - name: Build App Bundle
+  #       script: |
+  #         flutter build appbundle --release
+  #   artifacts:
+  #     - build/**/outputs/**/*.aab
+  #   publishing:
+  #     google_play:
+  #       credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+  #       track: internal
+  #       submit_as_draft: true
