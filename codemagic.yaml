@@ -1,0 +1,124 @@
+# Codemagic CI/CD Configuration for Airplane Mode Scheduler
+# This configuration builds the Flutter Android app
+# 
+# Setup Instructions:
+# 1. Connect your GitHub repository to Codemagic
+# 2. In Codemagic UI, go to Team Settings > Code signing identities
+# 3. Add your Android Keystore (or generate a new one)
+# 4. Set up environment variables in Codemagic:
+#    - CM_KEYSTORE: Base64 encoded keystore file
+#    - CM_KEYSTORE_PASSWORD: Keystore password
+#    - CM_KEY_ALIAS: Key alias
+#    - CM_KEY_PASSWORD: Key password
+
+workflows:
+  android-workflow:
+    name: Android Workflow
+    max_build_duration: 120
+    environment:
+      flutter: stable
+      xcode: latest
+      android_signing:
+        - keystore_reference  # Reference name from Codemagic UI
+      groups:
+        - google_play  # Optional: for Google Play publishing
+      vars:
+        PACKAGE_NAME: "com.airplane.scheduler"
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/.gradle/caches
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+        - pattern: develop
+          include: true
+          source: true
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+      
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      
+      - name: Analyze code
+        script: |
+          flutter analyze
+      
+      - name: Run tests
+        script: |
+          flutter test
+        ignore_failure: true
+      
+      - name: Build APK (Debug)
+        script: |
+          flutter build apk --debug
+      
+      - name: Build AAB (Release)
+        script: |
+          flutter build appbundle --release \
+            --build-name=1.0.0 \
+            --build-number=$(date +%s)
+    artifacts:
+      - build/**/outputs/**/*.apk
+      - build/**/outputs/**/*.aab
+      - build/**/outputs/**/mapping.txt
+      - flutter_drive.log
+    publishing:
+      email:
+        recipients:
+          - user@example.com  # Replace with your email
+        notify:
+          success: true
+          failure: true
+      # Uncomment to enable Google Play publishing
+      # google_play:
+      #   credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+      #   track: internal
+      #   submit_as_draft: true
+
+  # Workflow for building debug APK (faster)
+  android-debug-workflow:
+    name: Android Debug Workflow
+    max_build_duration: 60
+    environment:
+      flutter: stable
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/.gradle/caches
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: feature/*
+          include: true
+          source: true
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+      
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      
+      - name: Build APK (Debug)
+        script: |
+          flutter build apk --debug
+    artifacts:
+      - build/**/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - user@example.com  # Replace with your email
+        notify:
+          success: false
+          failure: true

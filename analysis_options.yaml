@@ -1,0 +1,29 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    avoid_print: true
+    prefer_single_quotes: true
+    prefer_const_constructors: true
+    prefer_const_literals_to_create_immutables: true
+    avoid_unnecessary_containers: true
+    use_key_in_widget_constructors: true
+    always_specify_types: false
+    avoid_redundant_argument_values: true
+    prefer_final_locals: true
+    prefer_final_in_for_each: true
+    unnecessary_this: true
+    unnecessary_new: true
+    unnecessary_const: true
+    unnecessary_brace_in_string_interps: true
+    curly_braces_in_flow_control_structures: true
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/generated_plugin_registrant.dart"
+  errors:
+    invalid_assignment: warning
+    missing_return: error
+    dead_code: info
