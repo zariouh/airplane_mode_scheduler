@@ -79,7 +79,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - your-email@example.com  # <-- REPLACE WITH YOUR EMAIL
+          - zariouhx@gmail.com  # <-- REPLACE WITH YOUR EMAIL
         notify:
           success: true
           failure: true
@@ -144,7 +144,7 @@ workflows:
   #   publishing:
   #     email:
   #       recipients:
-  #         - your-email@example.com  # <-- REPLACE WITH YOUR EMAIL
+  #         - zariouhx@gmail.com  # <-- REPLACE WITH YOUR EMAIL
   #       notify:
   #         success: true
   #         failure: true
@@ -152,7 +152,7 @@ apping.txt
   #   publishing:
   #     email:
   #       recipients:
-  #         - your-email@example.com  # <-- REPLACE WITH YOUR EMAIL
+  #         - zariouhx@gmail.com  # <-- REPLACE WITH YOUR EMAIL
   #       notify:
   #         success: true
   #         failure: true
