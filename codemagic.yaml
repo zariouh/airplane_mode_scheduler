@@ -74,10 +74,10 @@ workflows:
     publishing:
       email:
         recipients:
-          - user@example.com  # Replace with your email
+          - zariouhx@gmail.com # Replace with your email
         notify:
           success: true
-          failure: true
+          
       # Uncomment to enable Google Play publishing
       # google_play:
       #   credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
