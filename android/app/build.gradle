@@ -1,26 +1,24 @@
-plugins {
-    id "com.android.application"
-    id "kotlin-android"
-    id "dev.flutter.flutter-gradle-plugin"
-}
+android {
+    namespace "com.airplane.scheduler"
+    compileSdk flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
 
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17  // Updated from VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_17  // Updated from VERSION_1_8
     }
-}
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
+    kotlinOptions {
+        jvmTarget = '17'  // Updated from '1.8'
+    }
 
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
-}
+    defaultConfig {
+        applicationId "com.airplane.scheduler"
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion flutter.targetSdkVersion
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+    }
 
 android {
     namespace "com.airplane.scheduler"
