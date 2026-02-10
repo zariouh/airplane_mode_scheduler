@@ -35,9 +35,9 @@ class NotificationService {
         iOS: iosSettings,
       );
 
-      // ✅ FIXED: v20.x uses positional parameter (not named) for InitializationSettings
+      // ✅ FIXED: v18.x uses all named parameters
       await _notifications.initialize(
-        initSettings,  // Positional parameter!
+        initSettings,
         onDidReceiveNotificationResponse: _onNotificationResponse,
       );
 
@@ -111,10 +111,10 @@ class NotificationService {
 
       // All parameters as named
       await _notifications.show(
-        DateTime.now().millisecond,  // id (positional)
-        title,  // title (positional)
-        body,  // body (positional)
-        details,  // notificationDetails (positional)
+        DateTime.now().millisecond,
+        title,
+        body,
+        details,
         payload: 'airplane_mode_${enabled ? 'on' : 'off'}',
       );
 
@@ -160,10 +160,10 @@ class NotificationService {
       );
 
       await _notifications.show(
-        DateTime.now().millisecond,  // id (positional)
-        title,  // title (positional)
-        body,  // body (positional)
-        details,  // notificationDetails (positional)
+        DateTime.now().millisecond,
+        title,
+        body,
+        details,
         payload: 'schedule_reminder',
       );
     } catch (e) {
@@ -196,10 +196,10 @@ class NotificationService {
       );
 
       await _notifications.show(
-        0,  // id (positional)
-        'Permissions Required',  // title (positional)
-        'Please grant required permissions for Airplane Mode Scheduler to work properly',  // body (positional)
-        details,  // notificationDetails (positional)
+        0,
+        'Permissions Required',
+        'Please grant required permissions for Airplane Mode Scheduler to work properly',
+        details,
         payload: 'permission_required',
       );
     } catch (e) {
