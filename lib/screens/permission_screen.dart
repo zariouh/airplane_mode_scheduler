@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../providers/permission_provider.dart';
 import '../utils/constants.dart';
 import '../utils/logger.dart';
+import '../services/airplane_mode_service.dart'; // ADD THIS IMPORT
 import 'home_screen.dart';
 
 class PermissionScreen extends ConsumerStatefulWidget {
@@ -49,18 +50,29 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen> {
               Expanded(
                 child: ListView(
                   children: [
+                    // ADDED: SCHEDULE_EXACT_ALARM permission (Critical for Android 14+)
                     _buildPermissionCard(
                       step: 1,
+                      title: 'Schedule Exact Alarms',
+                      description: 'CRITICAL: Required to schedule precise airplane mode toggles at the exact time. Android 14+ requires this permission.',
+                      icon: LucideIcons.alarmClock,
+                      isGranted: permissionStatus.hasScheduleExactAlarmPermission,
+                      onTap: () => _requestScheduleExactAlarmPermission(),
+                      colorScheme: colorScheme,
+                    ),
+                    const SizedBox(height: AppConstants.spacingMd),
+                    _buildPermissionCard(
+                      step: 2,
                       title: 'Exact Alarm Permission',
                       description: 'Required to schedule precise airplane mode toggles at the exact time you specify.',
-                      icon: LucideIcons.alarmClock,
+                      icon: LucideIcons.timer,
                       isGranted: permissionStatus.hasExactAlarmPermission,
                       onTap: () => _requestExactAlarmPermission(),
                       colorScheme: colorScheme,
                     ),
                     const SizedBox(height: AppConstants.spacingMd),
                     _buildPermissionCard(
-                      step: 2,
+                      step: 3,
                       title: 'Battery Optimization Exemption',
                       description: 'Allows the app to run in the background and execute schedules even when the device is in power-saving mode.',
                       icon: LucideIcons.batteryCharging,
@@ -70,7 +82,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen> {
                     ),
                     const SizedBox(height: AppConstants.spacingMd),
                     _buildPermissionCard(
-                      step: 3,
+                      step: 4,
                       title: 'Airplane Mode Control',
                       description: 'Required to toggle airplane mode automatically. This requires a one-time ADB setup.',
                       icon: LucideIcons.plane,
@@ -81,7 +93,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen> {
                     ),
                     const SizedBox(height: AppConstants.spacingMd),
                     _buildPermissionCard(
-                      step: 4,
+                      step: 5,
                       title: 'Notification Permission',
                       description: 'Optional - allows the app to show notifications when airplane mode is toggled.',
                       icon: LucideIcons.bell,
@@ -240,6 +252,35 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen> {
     );
   }
 
+  // ADDED: Request SCHEDULE_EXACT_ALARM permission
+  Future<void> _requestScheduleExactAlarmPermission() async {
+    final granted = await AirplaneModeService.requestScheduleExactAlarmPermission();
+    if (granted) {
+      // Refresh permission state
+      ref.read(permissionProvider.notifier).refreshPermissions();
+    } else {
+      // Show dialog explaining how to enable manually
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Permission Required'),
+            content: const Text(
+              'Please allow "Alarms & reminders" permission in the next screen. '
+              'This is required for the app to schedule airplane mode toggles.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _requestExactAlarmPermission() async {
     await ref.read(permissionProvider.notifier).requestExactAlarmPermission();
   }
@@ -269,6 +310,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen> {
   }
 }
 
+// ... rest of AdbInstructionsSheet remains the same ...
 class AdbInstructionsSheet extends ConsumerWidget {
   const AdbInstructionsSheet({super.key});
 
