@@ -22,8 +22,8 @@ dependencies:
   android_alarm_manager_plus: ^5.0.0
   workmanager: ^0.9.0+3
   
-  # Notifications
-  flutter_local_notifications: ^20.0.0
+  # Notifications - FIXED: Use stable version
+  flutter_local_notifications: ^18.0.0
   
   # Permissions
   permission_handler: ^12.0.1
