@@ -5,6 +5,7 @@ import '../utils/logger.dart';
 
 // Permission status model
 class PermissionStatus {
+  final bool hasScheduleExactAlarmPermission; // ADDED
   final bool hasExactAlarmPermission;
   final bool hasBatteryOptimizationExemption;
   final bool hasWriteSecureSettings;
@@ -12,6 +13,7 @@ class PermissionStatus {
   final bool isAllGranted;
 
   const PermissionStatus({
+    this.hasScheduleExactAlarmPermission = false, // ADDED
     this.hasExactAlarmPermission = false,
     this.hasBatteryOptimizationExemption = false,
     this.hasWriteSecureSettings = false,
@@ -20,6 +22,7 @@ class PermissionStatus {
   });
 
   PermissionStatus copyWith({
+    bool? hasScheduleExactAlarmPermission, // ADDED
     bool? hasExactAlarmPermission,
     bool? hasBatteryOptimizationExemption,
     bool? hasWriteSecureSettings,
@@ -27,6 +30,7 @@ class PermissionStatus {
     bool? isAllGranted,
   }) {
     return PermissionStatus(
+      hasScheduleExactAlarmPermission: hasScheduleExactAlarmPermission ?? this.hasScheduleExactAlarmPermission, // ADDED
       hasExactAlarmPermission: hasExactAlarmPermission ?? this.hasExactAlarmPermission,
       hasBatteryOptimizationExemption: hasBatteryOptimizationExemption ?? this.hasBatteryOptimizationExemption,
       hasWriteSecureSettings: hasWriteSecureSettings ?? this.hasWriteSecureSettings,
@@ -50,14 +54,18 @@ class PermissionNotifier extends StateNotifier<PermissionStatus> {
     try {
       AppLogger.i('Checking all permissions');
       
+      // ADDED: Check SCHEDULE_EXACT_ALARM permission
+      final hasScheduleExactAlarm = await AirplaneModeService.checkScheduleExactAlarmPermission();
       final hasExactAlarm = await AirplaneModeService.hasExactAlarmPermission();
       final hasBatteryOpt = await AirplaneModeService.hasBatteryOptimizationExemption();
       final hasWriteSecure = await AirplaneModeService.hasWriteSecureSettingsPermission();
       final hasNotification = await _checkNotificationPermission();
 
-      final isAllGranted = hasExactAlarm && hasBatteryOpt && hasWriteSecure && hasNotification;
+      // UPDATED: Include schedule exact alarm in all granted check
+      final isAllGranted = hasScheduleExactAlarm && hasExactAlarm && hasBatteryOpt && hasWriteSecure;
 
       state = PermissionStatus(
+        hasScheduleExactAlarmPermission: hasScheduleExactAlarm, // ADDED
         hasExactAlarmPermission: hasExactAlarm,
         hasBatteryOptimizationExemption: hasBatteryOpt,
         hasWriteSecureSettings: hasWriteSecure,
@@ -65,10 +73,15 @@ class PermissionNotifier extends StateNotifier<PermissionStatus> {
         isAllGranted: isAllGranted,
       );
 
-      AppLogger.i('Permission status: exactAlarm=$hasExactAlarm, batteryOpt=$hasBatteryOpt, writeSecure=$hasWriteSecure, notification=$hasNotification');
+      AppLogger.i('Permission status: scheduleExactAlarm=$hasScheduleExactAlarm, exactAlarm=$hasExactAlarm, batteryOpt=$hasBatteryOpt, writeSecure=$hasWriteSecure, notification=$hasNotification');
     } catch (e) {
       AppLogger.e('Error checking permissions', e);
     }
+  }
+
+  // ADDED: refreshPermissions method (alias for checkPermissions)
+  Future<void> refreshPermissions() async {
+    await checkPermissions();
   }
 
   Future<bool> _checkNotificationPermission() async {
@@ -84,6 +97,7 @@ class PermissionNotifier extends StateNotifier<PermissionStatus> {
       state = state.copyWith(
         hasNotificationPermission: isGranted,
         isAllGranted: isGranted && 
+                      state.hasScheduleExactAlarmPermission && // UPDATED
                       state.hasExactAlarmPermission && 
                       state.hasBatteryOptimizationExemption && 
                       state.hasWriteSecureSettings,
@@ -92,6 +106,22 @@ class PermissionNotifier extends StateNotifier<PermissionStatus> {
       return isGranted;
     } catch (e) {
       AppLogger.e('Error requesting notification permission', e);
+      return false;
+    }
+  }
+
+  // ADDED: Request schedule exact alarm permission
+  Future<bool> requestScheduleExactAlarmPermission() async {
+    try {
+      final granted = await AirplaneModeService.requestScheduleExactAlarmPermission();
+      
+      // Recheck after request
+      await Future.delayed(const Duration(seconds: 1));
+      await checkPermissions();
+      
+      return granted;
+    } catch (e) {
+      AppLogger.e('Error requesting schedule exact alarm permission', e);
       return false;
     }
   }
@@ -132,6 +162,7 @@ class PermissionNotifier extends StateNotifier<PermissionStatus> {
       state = state.copyWith(
         hasWriteSecureSettings: hasPermission,
         isAllGranted: hasPermission && 
+                      state.hasScheduleExactAlarmPermission && // UPDATED
                       state.hasExactAlarmPermission && 
                       state.hasBatteryOptimizationExemption && 
                       state.hasNotificationPermission,
