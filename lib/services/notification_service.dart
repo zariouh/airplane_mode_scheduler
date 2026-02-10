@@ -35,9 +35,9 @@ class NotificationService {
         iOS: iosSettings,
       );
 
-      // ✅ FIXED: v20.x requires ALL parameters to be named, including initializationSettings
+      // ✅ FIXED: v20.x uses positional parameter (not named) for InitializationSettings
       await _notifications.initialize(
-        initializationSettings: initSettings,  // Named parameter!
+        initSettings,  // Positional parameter!
         onDidReceiveNotificationResponse: _onNotificationResponse,
       );
 
@@ -111,10 +111,10 @@ class NotificationService {
 
       // All parameters as named
       await _notifications.show(
-        id: DateTime.now().millisecond,
-        title: title,
-        body: body,
-        notificationDetails: details,
+        DateTime.now().millisecond,  // id (positional)
+        title,  // title (positional)
+        body,  // body (positional)
+        details,  // notificationDetails (positional)
         payload: 'airplane_mode_${enabled ? 'on' : 'off'}',
       );
 
@@ -160,10 +160,10 @@ class NotificationService {
       );
 
       await _notifications.show(
-        id: DateTime.now().millisecond,
-        title: title,
-        body: body,
-        notificationDetails: details,
+        DateTime.now().millisecond,  // id (positional)
+        title,  // title (positional)
+        body,  // body (positional)
+        details,  // notificationDetails (positional)
         payload: 'schedule_reminder',
       );
     } catch (e) {
@@ -196,10 +196,10 @@ class NotificationService {
       );
 
       await _notifications.show(
-        id: 0,
-        title: 'Permissions Required',
-        body: 'Please grant required permissions for Airplane Mode Scheduler to work properly',
-        notificationDetails: details,
+        0,  // id (positional)
+        'Permissions Required',  // title (positional)
+        'Please grant required permissions for Airplane Mode Scheduler to work properly',  // body (positional)
+        details,  // notificationDetails (positional)
         payload: 'permission_required',
       );
     } catch (e) {
