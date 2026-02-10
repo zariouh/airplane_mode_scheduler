@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart'; // ADD THIS IMPORT
 import '../utils/logger.dart';
 
 class AirplaneModeService {
@@ -10,6 +11,10 @@ class AirplaneModeService {
   // Check if all required permissions are granted
   static Future<bool> checkAllPermissions() async {
     try {
+      // ADDED: Check SCHEDULE_EXACT_ALARM permission (critical for Android 14+)
+      final scheduleExactAlarmStatus = await Permission.scheduleExactAlarm.status;
+      AppLogger.i('SCHEDULE_EXACT_ALARM status: $scheduleExactAlarmStatus');
+      
       final results = await Future.wait([
         hasExactAlarmPermission(),
         hasBatteryOptimizationExemption(),
@@ -17,14 +22,57 @@ class AirplaneModeService {
       ]);
       
       // All permissions must be granted
-      return results.every((result) => result);
+      final allGranted = results.every((result) => result) && scheduleExactAlarmStatus.isGranted;
+      
+      if (!allGranted) {
+        AppLogger.w('Not all permissions granted. '
+            'ScheduleExactAlarm: ${scheduleExactAlarmStatus.isGranted}, '
+            'ExactAlarm: ${results[0]}, '
+            'Battery: ${results[1]}, '
+            'WriteSecureSettings: ${results[2]}');
+      }
+      
+      return allGranted;
     } catch (e) {
       AppLogger.e('Error checking all permissions', e);
       return false;
     }
   }
 
-  // Check exact alarm permission (Android 12+)
+  // ADDED: Check SCHEDULE_EXACT_ALARM permission using permission_handler
+  static Future<bool> checkScheduleExactAlarmPermission() async {
+    try {
+      final status = await Permission.scheduleExactAlarm.status;
+      AppLogger.i('Schedule exact alarm permission status: $status');
+      return status.isGranted;
+    } catch (e) {
+      AppLogger.e('Error checking schedule exact alarm permission', e);
+      return false;
+    }
+  }
+
+  // ADDED: Request SCHEDULE_EXACT_ALARM permission (opens system settings)
+  static Future<bool> requestScheduleExactAlarmPermission() async {
+    try {
+      // On Android 14+, this opens system settings dialog
+      final status = await Permission.scheduleExactAlarm.request();
+      AppLogger.i('Schedule exact alarm permission request result: $status');
+      
+      if (status.isGranted) {
+        return true;
+      } else if (status.isPermanentlyDenied) {
+        // Open settings if permanently denied
+        await openAppSettings();
+        return false;
+      }
+      return false;
+    } catch (e) {
+      AppLogger.e('Error requesting schedule exact alarm permission', e);
+      return false;
+    }
+  }
+
+  // Check exact alarm permission (legacy method channel)
   static Future<bool> hasExactAlarmPermission() async {
     try {
       final result = await _channel.invokeMethod<bool>('hasExactAlarmPermission');
@@ -35,7 +83,7 @@ class AirplaneModeService {
     }
   }
 
-  // Request exact alarm permission
+  // Request exact alarm permission (legacy)
   static Future<void> requestExactAlarmPermission() async {
     try {
       await _channel.invokeMethod('requestExactAlarmPermission');
