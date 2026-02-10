@@ -11,45 +11,45 @@ dependencies:
     sdk: flutter
   
   # State Management
-  flutter_riverpod: ^2.4.9
+  flutter_riverpod: ^2.6.1
   
   # Local Storage
-  shared_preferences: ^2.2.2
-  sqflite: ^2.3.0
-  path: ^1.8.3
+  shared_preferences: ^2.5.4
+  sqflite: ^2.4.2
+  path: ^1.9.1
   
   # Scheduling
   android_alarm_manager_plus: ^5.0.0
-  workmanager: ^0.5.2
+  workmanager: ^0.9.0+3
   
   # Notifications
-  flutter_local_notifications: ^16.3.0
+  flutter_local_notifications: ^20.0.0
   
   # Permissions
-  permission_handler: ^11.1.0
-  app_settings: ^5.1.1
-  device_info_plus: ^9.1.1
+  permission_handler: ^12.0.1
+  app_settings: ^5.2.0
+  device_info_plus: ^12.3.0
   
   # UI Components
-  google_fonts: ^6.1.0
-  flutter_slidable: ^3.0.1
-  flutter_animate: ^4.3.0
+  google_fonts: ^6.2.1
+  flutter_slidable: ^4.0.0
+  flutter_animate: ^4.5.2
   shimmer: ^3.0.0
   
   # Utilities
-  intl: ^0.18.1
-  uuid: ^4.2.1
-  logger: ^2.0.2+1
-  package_info_plus: ^5.0.1
+  intl: ^0.20.2
+  uuid: ^4.5.1
+  logger: ^2.5.0
+  package_info_plus: ^9.0.0
   
   # Icons
-  cupertino_icons: ^1.0.6
+  cupertino_icons: ^1.0.8
   lucide_icons: ^0.257.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.1
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
