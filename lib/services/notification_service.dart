@@ -35,9 +35,9 @@ class NotificationService {
         iOS: iosSettings,
       );
 
-      // ✅ FIXED: v20.x API - all named parameters
+      // ✅ FIXED: v20.x requires ALL parameters to be named, including initializationSettings
       await _notifications.initialize(
-        initSettings,  // First parameter is still positional in v20.x
+        initializationSettings: initSettings,  // Named parameter!
         onDidReceiveNotificationResponse: _onNotificationResponse,
       );
 
@@ -109,7 +109,7 @@ class NotificationService {
         iOS: iosDetails,
       );
 
-      // ✅ FIXED: v20.x API - all parameters as named
+      // All parameters as named
       await _notifications.show(
         id: DateTime.now().millisecond,
         title: title,
@@ -159,7 +159,6 @@ class NotificationService {
         iOS: iosDetails,
       );
 
-      // ✅ FIXED: v20.x API - all parameters as named
       await _notifications.show(
         id: DateTime.now().millisecond,
         title: title,
@@ -196,7 +195,6 @@ class NotificationService {
         iOS: iosDetails,
       );
 
-      // ✅ FIXED: v20.x API - all parameters as named
       await _notifications.show(
         id: 0,
         title: 'Permissions Required',
