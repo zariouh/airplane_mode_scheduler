@@ -29,10 +29,8 @@ void main() async {
   await AndroidAlarmManager.initialize();
   
   // Initialize WorkManager
-  await Workmanager().initialize(
-    callbackDispatcher,
-    isInDebugMode: false,
-  );
+  // REMOVED: isInDebugMode parameter (deprecated in workmanager 0.9.0+)
+  await Workmanager().initialize(callbackDispatcher);
   
   // Initialize Notification Service
   await NotificationService().init();
