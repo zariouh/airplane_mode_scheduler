@@ -191,6 +191,67 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Divider(),
 
+          // Test Toggle Button (NEW)
+          ListTile(
+            leading: const Icon(LucideIcons.plane, color: Colors.blue),
+            title: const Text('Test Airplane Mode Toggle'),
+            subtitle: const Text('ON → wait 5 seconds → OFF (diagnostic test)'),
+            trailing: const Icon(Icons.arrow_forward_ios),
+            onTap: () async {
+              try {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Turning Airplane Mode ON...')),
+                );
+
+                final successOn = await AirplaneModeService.toggleAirplaneMode(true);
+
+                if (!successOn) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Failed to turn ON – check ADB permission'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+
+                await Future.delayed(const Duration(seconds: 5));
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Turning Airplane Mode OFF...')),
+                );
+
+                final successOff = await AirplaneModeService.toggleAirplaneMode(false);
+
+                if (successOff) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Test toggle completed successfully')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Failed to turn OFF'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+
+                // Refresh status after test
+                await _checkAirplaneModeStatus();
+              } catch (e) {
+                AppLogger.e('Test toggle failed', e);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error during test: $e'),
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                );
+              }
+            },
+          ),
+
+          const Divider(),
+
           // About Section
           _buildSectionHeader(context, 'About'),
           ListTile(
@@ -211,7 +272,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildSectionHeader(BuildContext context, String title) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppConstants.spacingMd,
@@ -281,7 +341,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showAdbInstructions() {
-    // Show ADB instructions dialog
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
