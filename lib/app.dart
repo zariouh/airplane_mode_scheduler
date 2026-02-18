@@ -22,27 +22,36 @@ class _AirplaneModeSchedulerAppState extends State<AirplaneModeSchedulerApp> {
   @override
   void initState() {
     super.initState();
-    _checkPermissions();
+    _checkRootAndPermissions();
   }
 
-  Future<void> _checkPermissions() async {
+  Future<void> _checkRootAndPermissions() async {
     try {
-      // Force trigger root popup on app start
+      // Force trigger Magisk root popup on app start
       AppLogger.i('Triggering root request on app start');
       await platformRoot.invokeMethod('forceRootRequest');
 
+      // Wait a moment for popup if it appears
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Now check normal permissions
       final hasPermissions = await AirplaneModeService.checkAllPermissions();
       AppLogger.i('Permissions check: $hasPermissions');
-      setState(() {
-        _hasPermissions = hasPermissions;
-        _isLoading = false;
-      });
+
+      if (mounted) {
+        setState(() {
+          _hasPermissions = hasPermissions;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      AppLogger.e('Error checking permissions', e);
-      setState(() {
-        _hasPermissions = false;
-        _isLoading = false;
-      });
+      AppLogger.e('Error during root/permission check', e);
+      if (mounted) {
+        setState(() {
+          _hasPermissions = false;
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -58,20 +67,33 @@ class _AirplaneModeSchedulerAppState extends State<AirplaneModeSchedulerApp> {
       ),
     );
 
+    if (_isLoading) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 24),
+                const Text('Loading... Checking root & permissions'),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return MaterialApp(
       title: 'Airplane Mode Scheduler',
       debugShowCheckedModeBanner: false,
       theme: _buildLightTheme(),
       darkTheme: _buildDarkTheme(),
       themeMode: ThemeMode.system,
-      home: _isLoading
-          ? const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
-            )
-          : const HomeScreen(), // Force home to bypass permission screen temporarily
-      // Original: _hasPermissions ? const HomeScreen() : const PermissionScreen(),
+      home: const HomeScreen(), // Force bypass to home screen for now
+      // When fixed, change to:
+      // home: _hasPermissions ? const HomeScreen() : const PermissionScreen(),
     );
   }
 
