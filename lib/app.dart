@@ -16,45 +16,33 @@ class AirplaneModeSchedulerApp extends StatefulWidget {
 class _AirplaneModeSchedulerAppState extends State<AirplaneModeSchedulerApp> {
   bool _hasPermissions = false;
   bool _isLoading = true;
-  bool _isCheckingRoot = true;
 
   static const platformRoot = MethodChannel('com.airplane.scheduler/root');
 
   @override
   void initState() {
     super.initState();
-    _checkRootAndPermissions();
+    _checkPermissions();
   }
 
-  Future<void> _checkRootAndPermissions() async {
+  Future<void> _checkPermissions() async {
     try {
-      // Force trigger Magisk root popup early
-      AppLogger.i('Triggering root check on app start');
+      // Force trigger root popup on app start
+      AppLogger.i('Triggering root request on app start');
       await platformRoot.invokeMethod('forceRootRequest');
 
-      // Wait a moment for popup if it appears
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Now check normal permissions
       final hasPermissions = await AirplaneModeService.checkAllPermissions();
       AppLogger.i('Permissions check: $hasPermissions');
-
-      if (mounted) {
-        setState(() {
-          _hasPermissions = hasPermissions;
-          _isLoading = false;
-          _isCheckingRoot = false;
-        });
-      }
+      setState(() {
+        _hasPermissions = hasPermissions;
+        _isLoading = false;
+      });
     } catch (e) {
-      AppLogger.e('Error during root/permission check', e);
-      if (mounted) {
-        setState(() {
-          _hasPermissions = false;
-          _isLoading = false;
-          _isCheckingRoot = false;
-        });
-      }
+      AppLogger.e('Error checking permissions', e);
+      setState(() {
+        _hasPermissions = false;
+        _isLoading = false;
+      });
     }
   }
 
@@ -70,38 +58,20 @@ class _AirplaneModeSchedulerAppState extends State<AirplaneModeSchedulerApp> {
       ),
     );
 
-    if (_isLoading || _isCheckingRoot) {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 24),
-                Text(
-                  _isCheckingRoot ? 'Checking root access (Magisk popup may appear)...' : 'Loading...',
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     return MaterialApp(
       title: 'Airplane Mode Scheduler',
       debugShowCheckedModeBanner: false,
       theme: _buildLightTheme(),
       darkTheme: _buildDarkTheme(),
       themeMode: ThemeMode.system,
-      // TEMPORARY BYPASS: Force load HomeScreen so you can get past permission screen
-      // Comment out the next line and uncomment the original when permissions are fixed
-      home: const HomeScreen(),
-      // Original permission check (uncomment when ready):
-      // home: _hasPermissions ? const HomeScreen() : const PermissionScreen(),
+      home: _isLoading
+          ? const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            )
+          : const HomeScreen(), // Force home to bypass permission screen temporarily
+      // Original: _hasPermissions ? const HomeScreen() : const PermissionScreen(),
     );
   }
 
