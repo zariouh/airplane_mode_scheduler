@@ -4,8 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import android.util.Log
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import eu.chainfire.libsuperuser.Shell
 
 class AirplaneModeManager(private val context: Context) {
 
@@ -13,8 +12,8 @@ class AirplaneModeManager(private val context: Context) {
         private const val TAG = "AirplaneModeManager"
 
         /**
-         * Root-based toggle using su shell commands
-         * This should bypass all broadcast and radio restrictions on LineageOS
+         * Root-based toggle using su shell commands (adapted from libsuperuser)
+         * This bypasses all broadcast and radio restrictions on LineageOS
          */
         @JvmStatic
         fun toggleAirplaneModeStatic(context: Context, enable: Boolean): Boolean {
@@ -24,20 +23,19 @@ class AirplaneModeManager(private val context: Context) {
 
             try {
                 // 1. Set global airplane mode setting (affects UI/notification)
-                execRoot("settings put global airplane_mode_on $state")
+                executeRootCommand("settings put global airplane_mode_on $state")
 
                 // 2. Send the airplane mode broadcast via root shell
                 val broadcastCmd = "am broadcast -a android.intent.action.AIRPLANE_MODE_CHANGED --ez state $stateBool"
-                execRoot(broadcastCmd)
+                executeRootCommand(broadcastCmd)
 
                 // 3. Force-disable/enable radios (this is what usually fixes the "calls still work" issue)
-                execRoot("svc data $radioAction")
-                execRoot("svc wifi $radioAction")
-                execRoot("svc bluetooth $radioAction")
+                executeRootCommand("svc data $radioAction")
+                executeRootCommand("svc wifi $radioAction")
+                executeRootCommand("svc bluetooth $radioAction")
 
                 Log.i(TAG, "Root-based airplane mode toggle completed: enable=$enable")
                 return true
-
             } catch (e: Exception) {
                 Log.e(TAG, "Root-based toggle failed", e)
                 return false
@@ -45,31 +43,37 @@ class AirplaneModeManager(private val context: Context) {
         }
 
         /**
-         * Helper: Execute a command with root privileges (su -c)
+         * Execute a command with root privileges using libsuperuser
          * Logs output and errors for debugging
          */
-        private fun execRoot(command: String) {
+        private fun executeRootCommand(command: String): Boolean {
+            val stdout = ArrayList<String>()
+            val stderr = ArrayList<String>()
             try {
-                val process = Runtime.getRuntime().exec(arrayOf("su", "-c", command))
-
-                // Capture output and error
-                val output = BufferedReader(InputStreamReader(process.inputStream)).readText()
-                val error = BufferedReader(InputStreamReader(process.errorStream)).readText()
-
-                process.waitFor()
-                val exitCode = process.exitValue()
-
-                if (exitCode == 0) {
-                    if (output.isNotBlank()) {
-                        Log.d(TAG, "Root command output: $output")
-                    }
-                } else {
-                    Log.e(TAG, "Root command failed (exit $exitCode) → $command")
-                    if (error.isNotBlank()) Log.e(TAG, "Error: $error")
+                Shell.Pool.SU.run(command, stdout, stderr, true)  // true = wait for completion
+                if (stdout.isNotEmpty()) {
+                    Log.d(TAG, "Root command output: ${stdout.joinToString("\n")}")
                 }
+                if (stderr.isNotEmpty()) {
+                    Log.e(TAG, "Root command error: ${stderr.joinToString("\n")}")
+                    return false
+                }
+                return true
+            } catch (e: Shell.ShellDiedException) {
+                Log.e(TAG, "Shell died during root command: $command", e)
+                return false
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to run root command: $command", e)
+                return false
             }
+        }
+
+        /**
+         * Check if root is available (triggers popup if not granted)
+         */
+        @JvmStatic
+        fun hasRootAccess(): Boolean {
+            return Shell.SU.available()
         }
 
         @JvmStatic
