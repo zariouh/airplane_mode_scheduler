@@ -8,6 +8,7 @@ import io.flutter.plugin.common.MethodChannel
 import android.util.Log
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import eu.chainfire.libsuperuser.Shell
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.airplane.scheduler/airplane_mode"
@@ -101,6 +102,9 @@ class MainActivity : FlutterActivity() {
                 "forceRootRequest" -> {
                     checkAndRequestRoot()
                     result.success(true)
+                }
+                "hasRootAccess" -> {
+                    result.success(Shell.SU.available()) // Triggers popup if not granted
                 }
                 else -> result.notImplemented()
             }
