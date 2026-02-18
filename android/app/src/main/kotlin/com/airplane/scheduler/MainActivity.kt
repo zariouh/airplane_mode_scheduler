@@ -12,8 +12,9 @@ import java.io.InputStreamReader
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.airplane.scheduler/airplane_mode"
     private val ROOT_CHANNEL = "com.airplane.scheduler/root" // New channel for root control
-    private lateinit val permissionManager: PermissionManager
-    private lateinit val airplaneModeManager: AirplaneModeManager
+
+    private lateinit var permissionManager: PermissionManager
+    private lateinit var airplaneModeManager: AirplaneModeManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
