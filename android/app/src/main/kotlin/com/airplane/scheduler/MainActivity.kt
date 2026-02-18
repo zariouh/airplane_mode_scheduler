@@ -12,8 +12,8 @@ import java.io.InputStreamReader
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.airplane.scheduler/airplane_mode"
     private val ROOT_CHANNEL = "com.airplane.scheduler/root" // New channel for root control
-    private lateinit var permissionManager: PermissionManager
-    private lateinit var airplaneModeManager: AirplaneModeManager
+    private lateinit val permissionManager: PermissionManager
+    private lateinit val airplaneModeManager: AirplaneModeManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,7 +53,43 @@ class MainActivity : FlutterActivity() {
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
-                // ... your existing methods unchanged ...
+                // Permission checks
+                "hasExactAlarmPermission" -> {
+                    result.success(permissionManager.hasExactAlarmPermission())
+                }
+                "requestExactAlarmPermission" -> {
+                    permissionManager.requestExactAlarmPermission()
+                    result.success(null)
+                }
+                "hasBatteryOptimizationExemption" -> {
+                    result.success(permissionManager.hasBatteryOptimizationExemption())
+                }
+                "requestBatteryOptimizationExemption" -> {
+                    permissionManager.requestBatteryOptimizationExemption()
+                    result.success(null)
+                }
+                "hasWriteSecureSettingsPermission" -> {
+                    result.success(permissionManager.hasWriteSecureSettingsPermission())
+                }
+                "openWriteSecureSettingsInstructions" -> {
+                    permissionManager.openWriteSecureSettingsInstructions()
+                    result.success(null)
+                }
+
+                // Airplane mode operations
+                "toggleAirplaneMode" -> {
+                    val enable = call.argument<Boolean>("enable") ?: false
+                    val success = airplaneModeManager.toggleAirplaneMode(enable)
+                    result.success(success)
+                }
+                "isAirplaneModeOn" -> {
+                    result.success(airplaneModeManager.isAirplaneModeOn())
+                }
+                "openAirplaneModeSettings" -> {
+                    airplaneModeManager.openAirplaneModeSettings()
+                    result.success(null)
+                }
+
                 else -> result.notImplemented()
             }
         }
