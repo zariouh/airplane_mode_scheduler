@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:flutter/services.dart'; // NEW: for MethodChannel
 import '../providers/permission_provider.dart';
 import '../services/airplane_mode_service.dart';
 import '../utils/constants.dart';
@@ -17,6 +18,8 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _appVersion = '';
   bool _isAirplaneModeOn = false;
+
+  static const platformRoot = MethodChannel('com.airplane.scheduler/root'); // NEW channel
 
   @override
   void initState() {
@@ -191,7 +194,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Divider(),
 
-          // Test Toggle Button (NEW)
+          // NEW: Grant Root Access button
+          ListTile(
+            leading: const Icon(LucideIcons.shield, color: Colors.green),
+            title: const Text('Grant Root Access'),
+            subtitle: const Text('Required for automatic airplane mode toggle (one-time Magisk popup)'),
+            trailing: const Icon(Icons.arrow_forward_ios),
+            onTap: () async {
+              try {
+                await platformRoot.invokeMethod('forceRootRequest');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Root request triggered — check Magisk popup on your phone'),
+                    duration: Duration(seconds: 4),
+                  ),
+                );
+              } catch (e) {
+                AppLogger.e('Failed to trigger root request', e);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error triggering root: $e'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            },
+          ),
+
+          // Test Toggle Button
           ListTile(
             leading: const Icon(LucideIcons.plane, color: Colors.blue),
             title: const Text('Test Airplane Mode Toggle'),
@@ -204,11 +234,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 );
 
                 final successOn = await AirplaneModeService.toggleAirplaneMode(true);
-
                 if (!successOn) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Failed to turn ON – check ADB permission'),
+                      content: Text('Failed to turn ON – check root grant'),
                       backgroundColor: Colors.orange,
                     ),
                   );
@@ -222,7 +251,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 );
 
                 final successOff = await AirplaneModeService.toggleAirplaneMode(false);
-
                 if (successOff) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Test toggle completed successfully')),
@@ -230,7 +258,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Failed to turn OFF'),
+                      content: Text('Failed to turn OFF – check root grant'),
                       backgroundColor: Colors.orange,
                     ),
                   );
@@ -300,9 +328,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                enable
-                    ? 'Airplane mode enabled'
-                    : 'Airplane mode disabled',
+                enable ? 'Airplane mode enabled' : 'Airplane mode disabled',
               ),
             ),
           );
@@ -311,9 +337,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
-                'Failed to toggle airplane mode. Please check permissions.',
-              ),
+              content: Text('Failed to toggle airplane mode. Please check root access.'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -372,9 +396,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await _checkAirplaneModeStatus();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Permissions refreshed'),
-        ),
+        const SnackBar(content: Text('Permissions refreshed')),
       );
     }
   }
