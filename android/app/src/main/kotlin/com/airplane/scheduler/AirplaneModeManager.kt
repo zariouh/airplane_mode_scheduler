@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import android.util.Log
-import eu.chainfire.libsuperuser.Shell
+import com.topjohnwu.superuser.Shell
 
 class AirplaneModeManager(private val context: Context) {
 
@@ -12,8 +12,7 @@ class AirplaneModeManager(private val context: Context) {
         private const val TAG = "AirplaneModeManager"
 
         /**
-         * Root-based toggle using su shell commands (adapted from libsuperuser)
-         * This bypasses all broadcast and radio restrictions on LineageOS
+         * Root-based toggle using libsu
          */
         @JvmStatic
         fun toggleAirplaneModeStatic(context: Context, enable: Boolean): Boolean {
@@ -21,65 +20,60 @@ class AirplaneModeManager(private val context: Context) {
             val stateBool = if (enable) "true" else "false"
             val radioAction = if (enable) "disable" else "enable"
 
-            try {
-                // 1. Set global airplane mode setting (affects UI/notification)
+            return try {
                 executeRootCommand("settings put global airplane_mode_on $state")
-
-                // 2. Send the airplane mode broadcast via root shell
-                val broadcastCmd = "am broadcast -a android.intent.action.AIRPLANE_MODE_CHANGED --ez state $stateBool"
-                executeRootCommand(broadcastCmd)
-
-                // 3. Force-disable/enable radios (this is what usually fixes the "calls still work" issue)
+                executeRootCommand("am broadcast -a android.intent.action.AIRPLANE_MODE_CHANGED --ez state $stateBool")
                 executeRootCommand("svc data $radioAction")
                 executeRootCommand("svc wifi $radioAction")
                 executeRootCommand("svc bluetooth $radioAction")
 
                 Log.i(TAG, "Root-based airplane mode toggle completed: enable=$enable")
-                return true
+                true
             } catch (e: Exception) {
                 Log.e(TAG, "Root-based toggle failed", e)
-                return false
+                false
             }
         }
 
         /**
-         * Execute a command with root privileges using libsuperuser
-         * Logs output and errors for debugging
+         * Execute command with libsu
          */
         private fun executeRootCommand(command: String): Boolean {
-            val stdout = ArrayList<String>()
-            val stderr = ArrayList<String>()
-            try {
-                Shell.Pool.SU.run(command, stdout, stderr, true)  // true = wait for completion
-                if (stdout.isNotEmpty()) {
-                    Log.d(TAG, "Root command output: ${stdout.joinToString("\n")}")
+            return try {
+                val result = Shell.cmd(command).exec()
+
+                if (result.isSuccess) {
+                    if (result.out.isNotEmpty()) {
+                        Log.d(TAG, "Root output: ${result.out.joinToString("\n")}")
+                    }
+                    true
+                } else {
+                    if (result.err.isNotEmpty()) {
+                        Log.e(TAG, "Root error: ${result.err.joinToString("\n")}")
+                    }
+                    false
                 }
-                if (stderr.isNotEmpty()) {
-                    Log.e(TAG, "Root command error: ${stderr.joinToString("\n")}")
-                    return false
-                }
-                return true
-            } catch (e: Shell.ShellDiedException) {
-                Log.e(TAG, "Shell died during root command: $command", e)
-                return false
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to run root command: $command", e)
-                return false
+                Log.e(TAG, "Root command failed: $command", e)
+                false
             }
         }
 
         /**
-         * Check if root is available (triggers popup if not granted)
+         * Check if root granted
          */
         @JvmStatic
         fun hasRootAccess(): Boolean {
-            return Shell.SU.available()
+            return Shell.isAppGrantedRoot() == true
         }
 
         @JvmStatic
         fun isAirplaneModeOnStatic(context: Context): Boolean {
             return try {
-                Settings.Global.getInt(context.contentResolver, Settings.Global.AIRPLANE_MODE_ON) == 1
+                Settings.Global.getInt(
+                    context.contentResolver,
+                    Settings.Global.AIRPLANE_MODE_ON
+                ) == 1
             } catch (e: Exception) {
                 Log.w(TAG, "Could not read airplane mode state", e)
                 false
@@ -87,7 +81,6 @@ class AirplaneModeManager(private val context: Context) {
         }
     }
 
-    // Public instance methods (used from Flutter via channel)
     fun toggleAirplaneMode(enable: Boolean): Boolean {
         return toggleAirplaneModeStatic(context, enable)
     }
@@ -110,7 +103,7 @@ class AirplaneModeManager(private val context: Context) {
                 }
                 context.startActivity(intent)
             } catch (e2: Exception) {
-                Log.e(TAG, "Fallback to wireless settings failed", e2)
+                Log.e(TAG, "Fallback failed", e2)
             }
         }
     }
