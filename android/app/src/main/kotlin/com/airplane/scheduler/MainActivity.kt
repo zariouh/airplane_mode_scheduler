@@ -19,7 +19,7 @@ class MainActivity : FlutterActivity() {
         super.onCreate(savedInstanceState)
 
         initializeRoot()
-        forceRootRequest() // 🔥 Force popup on launch
+        forceRootRequest()   // 🔥 Force popup on launch
     }
 
     /**
