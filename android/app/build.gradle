@@ -4,25 +4,6 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
-// EXPLICITLY load Flutter properties from local.properties
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
-}
-
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
-
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
-}
-
 android {
     namespace "com.airplane.scheduler"
     compileSdkVersion 36
@@ -42,9 +23,8 @@ android {
         applicationId "com.airplane.scheduler"
         minSdkVersion 21
         targetSdkVersion 36
-        // Use the explicitly loaded variables
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
+        versionCode 1
+        versionName "1.0"
         multiDexEnabled true
     }
 
@@ -64,8 +44,15 @@ flutter {
     source '../..'
 }
 
+repositories {
+    google()
+    mavenCentral()
+}
+
 dependencies {
     implementation 'androidx.multidex:multidex:2.0.1'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
-    implementation "com.github.topjohnwu.libsu:core:5.2.2" 
+
+    // libsu (modern root library)
+    implementation "com.github.topjohnwu.libsu:core:5.2.2"
 }
