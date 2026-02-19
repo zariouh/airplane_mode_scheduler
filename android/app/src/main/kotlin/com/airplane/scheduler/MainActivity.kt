@@ -1,10 +1,10 @@
 package com.airplane.scheduler
 
 import android.os.Bundle
+import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
-import android.util.Log
 import com.topjohnwu.superuser.Shell
 
 class MainActivity : FlutterActivity() {
@@ -18,29 +18,54 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialize libsu
+        initializeRoot()
+        forceRootRequest()   // 🔥 Force popup on launch
+    }
+
+    /**
+     * Configure libsu
+     */
+    private fun initializeRoot() {
         Shell.enableVerboseLogging = false
+
         Shell.setDefaultBuilder(
             Shell.Builder.create()
                 .setFlags(Shell.FLAG_REDIRECT_STDERR)
+                .setTimeout(10)
         )
-
-        checkAndRequestRoot()
     }
 
-    private fun checkAndRequestRoot() {
+    /**
+     * This ACTUALLY forces Magisk popup
+     * by executing a real root command.
+     */
+    private fun forceRootRequest() {
         Thread {
             try {
-                val shell = Shell.getShell()
-                if (shell.isRoot) {
+                val result = Shell.cmd("id").exec()
+
+                val isRoot = result.isSuccess &&
+                        result.out.any { it.contains("uid=0") }
+
+                if (isRoot) {
                     Log.i("RootCheck", "Root granted")
                 } else {
-                    Log.w("RootCheck", "Root not granted")
+                    Log.w("RootCheck", "Root denied or not available")
                 }
+
             } catch (e: Exception) {
                 Log.e("RootCheck", "Root request failed", e)
             }
         }.start()
+    }
+
+    /**
+     * Actively checks root (not passive)
+     */
+    private fun hasRoot(): Boolean {
+        val result = Shell.cmd("id").exec()
+        return result.isSuccess &&
+                result.out.any { it.contains("uid=0") }
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -82,8 +107,7 @@ class MainActivity : FlutterActivity() {
 
                 "toggleAirplaneMode" -> {
                     val enable = call.argument<Boolean>("enable") ?: false
-                    val success = airplaneModeManager.toggleAirplaneMode(enable)
-                    result.success(success)
+                    result.success(airplaneModeManager.toggleAirplaneMode(enable))
                 }
 
                 "isAirplaneModeOn" ->
@@ -106,12 +130,12 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
 
                 "forceRootRequest" -> {
-                    checkAndRequestRoot()
+                    forceRootRequest()
                     result.success(true)
                 }
 
                 "hasRootAccess" ->
-                    result.success(Shell.isAppGrantedRoot() == true)
+                    result.success(hasRoot())
 
                 else -> result.notImplemented()
             }
