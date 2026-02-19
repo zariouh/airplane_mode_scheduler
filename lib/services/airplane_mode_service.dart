@@ -18,7 +18,7 @@ class AirplaneModeService {
       final results = await Future.wait([
         hasExactAlarmPermission(),
         hasBatteryOptimizationExemption(),
-        hasWriteSecureSettingsPermission(),
+        // Removed: hasWriteSecureSettingsPermission() — root handles airplane toggle now
       ]);
       
       // All permissions must be granted
@@ -28,8 +28,7 @@ class AirplaneModeService {
         AppLogger.w('Not all permissions granted. '
             'ScheduleExactAlarm: ${scheduleExactAlarmStatus.isGranted}, '
             'ExactAlarm: ${results[0]}, '
-            'Battery: ${results[1]}, '
-            'WriteSecureSettings: ${results[2]}');
+            'Battery: ${results[1]}');
       }
       
       return allGranted;
@@ -111,27 +110,6 @@ class AirplaneModeService {
     } catch (e) {
       AppLogger.e('Error requesting battery optimization exemption', e);
       throw Exception('Failed to request battery optimization exemption: $e');
-    }
-  }
-
-  // Check WRITE_SECURE_SETTINGS permission
-  static Future<bool> hasWriteSecureSettingsPermission() async {
-    try {
-      final result = await _channel.invokeMethod<bool>('hasWriteSecureSettingsPermission');
-      return result ?? false;
-    } catch (e) {
-      AppLogger.e('Error checking WRITE_SECURE_SETTINGS permission', e);
-      return false;
-    }
-  }
-
-  // Open instructions for granting WRITE_SECURE_SETTINGS via ADB
-  static Future<void> openWriteSecureSettingsInstructions() async {
-    try {
-      await _channel.invokeMethod('openWriteSecureSettingsInstructions');
-    } catch (e) {
-      AppLogger.e('Error opening write secure settings instructions', e);
-      throw Exception('Failed to open instructions: $e');
     }
   }
 
