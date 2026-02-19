@@ -17,8 +17,6 @@ class _AirplaneModeSchedulerAppState extends State<AirplaneModeSchedulerApp> {
   bool _hasPermissions = false;
   bool _isLoading = true;
 
-  static const platformRoot = MethodChannel('com.airplane.scheduler/root');
-
   @override
   void initState() {
     super.initState();
@@ -27,10 +25,6 @@ class _AirplaneModeSchedulerAppState extends State<AirplaneModeSchedulerApp> {
 
   Future<void> _checkPermissions() async {
     try {
-      // Force trigger root popup on app start
-      AppLogger.i('Triggering root request on app start');
-      await platformRoot.invokeMethod('forceRootRequest');
-
       final hasPermissions = await AirplaneModeService.checkAllPermissions();
       AppLogger.i('Permissions check: $hasPermissions');
       setState(() {
@@ -48,7 +42,6 @@ class _AirplaneModeSchedulerAppState extends State<AirplaneModeSchedulerApp> {
 
   @override
   Widget build(BuildContext context) {
-    // Set system UI overlay style
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -66,9 +59,7 @@ class _AirplaneModeSchedulerAppState extends State<AirplaneModeSchedulerApp> {
       themeMode: ThemeMode.system,
       home: _isLoading
           ? const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
+              body: Center(child: CircularProgressIndicator()),
             )
           : _hasPermissions
               ? const HomeScreen()
