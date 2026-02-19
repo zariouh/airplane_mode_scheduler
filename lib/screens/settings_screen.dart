@@ -155,25 +155,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ? const Icon(LucideIcons.checkCircle, color: Colors.green)
                 : const Icon(LucideIcons.alertCircle, color: Colors.orange),
             onTap: () => _requestBatteryOptimization(),
-          ),
-          ListTile(
-            leading: Icon(
-              LucideIcons.plane,
-              color: permissionStatus.hasWriteSecureSettings
-                  ? colorScheme.primary
-                  : colorScheme.error,
-            ),
-            title: const Text('Airplane Mode Control'),
-            subtitle: Text(
-              permissionStatus.hasWriteSecureSettings
-                  ? 'Granted'
-                  : 'ADB setup required',
-            ),
-            trailing: permissionStatus.hasWriteSecureSettings
-                ? const Icon(LucideIcons.checkCircle, color: Colors.green)
-                : const Icon(LucideIcons.alertCircle, color: Colors.orange),
-            onTap: () => _showAdbInstructions(),
-          ),
+          ),          
 
           const Divider(),
 
@@ -364,33 +346,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await ref.read(permissionProvider.notifier).requestBatteryOptimizationExemption();
   }
 
-  void _showAdbInstructions() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ADB Setup Required'),
-        content: const Text(
-          'To automatically control airplane mode, you need to grant WRITE_SECURE_SETTINGS permission via ADB.\n\n'
-          'Run this command:\n'
-          'adb shell pm grant com.airplane.scheduler android.permission.WRITE_SECURE_SETTINGS',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          FilledButton(
-            onPressed: () {
-              ref.read(permissionProvider.notifier).verifyWriteSecureSettingsPermission();
-              Navigator.pop(context);
-            },
-            child: const Text('Verify'),
-          ),
-        ],
-      ),
-    );
-  }
-
+  
   Future<void> _refreshPermissions() async {
     await ref.read(permissionProvider.notifier).checkPermissions();
     await _checkAirplaneModeStatus();
