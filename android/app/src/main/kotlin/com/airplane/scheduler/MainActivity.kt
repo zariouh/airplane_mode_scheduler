@@ -19,7 +19,7 @@ class MainActivity : FlutterActivity() {
         super.onCreate(savedInstanceState)
 
         // Initialize libsu
-        Shell.enableVerboseLogging = BuildConfig.DEBUG
+        Shell.enableVerboseLogging = false
         Shell.setDefaultBuilder(
             Shell.Builder.create()
                 .setFlags(Shell.FLAG_REDIRECT_STDERR)
