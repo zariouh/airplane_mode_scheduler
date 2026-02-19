@@ -19,7 +19,7 @@ class MainActivity : FlutterActivity() {
         super.onCreate(savedInstanceState)
 
         initializeRoot()
-        forceRootRequest()   // 🔥 Force popup on launch
+        forceRootRequest() // 🔥 Force popup on launch
     }
 
     /**
@@ -94,14 +94,6 @@ class MainActivity : FlutterActivity() {
 
                 "requestBatteryOptimizationExemption" -> {
                     permissionManager.requestBatteryOptimizationExemption()
-                    result.success(null)
-                }
-
-                "hasWriteSecureSettingsPermission" ->
-                    result.success(permissionManager.hasWriteSecureSettingsPermission())
-
-                "openWriteSecureSettingsInstructions" -> {
-                    permissionManager.openWriteSecureSettingsInstructions()
                     result.success(null)
                 }
 
