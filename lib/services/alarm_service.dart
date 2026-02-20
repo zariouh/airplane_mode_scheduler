@@ -1,10 +1,10 @@
 import 'dart:math';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import '../models/schedule_model.dart';
-import 'airplane_mode_service.dart';
 import 'notification_service.dart';
 import '../utils/logger.dart';
-import 'package:flutter/services.dart'; // for MethodChannel if needed
+import 'package:flutter/services.dart'; // if needed
+import 'package:com.topjohnwu.superuser.Shell'; // Make sure this is imported correctly
 
 // Background callback - runs in separate isolate
 @pragma('vm:entry-point')
@@ -15,25 +15,31 @@ void airplaneModeCallback(int id, Map<String, dynamic>? params) async {
 
     AppLogger.i('🔔 Alarm callback triggered: enable=$enable, schedule=$scheduleName');
 
-    // Call the root-based toggle via MethodChannel (safer from background isolate)
-    final success = await AirplaneModeService.toggleAirplaneMode(enable);
+    // Direct root command using TopJohnWu's libsuperuser (like Acca app)
+    final state = enable ? "1" : "0";
+    final stateBool = enable ? "true" : "false";
+    final radioAction = enable ? "disable" : "enable";
 
-    if (success) {
-      AppLogger.i('✅ Successfully toggled airplane mode via root');
-      
-      try {
-        await NotificationService().showAirplaneModeNotification(
-          enabled: enable,
-          scheduleName: scheduleName,
-        );
-      } catch (e) {
-        AppLogger.e('Failed to show notification', e);
-      }
-    } else {
-      AppLogger.w('❌ Failed to toggle airplane mode');
+    // Run all commands with root
+    Shell.cmd("settings put global airplane_mode_on $state").exec();
+    Shell.cmd("am broadcast -a android.intent.action.AIRPLANE_MODE_CHANGED --ez state $stateBool").exec();
+    Shell.cmd("svc data $radioAction").exec();
+    Shell.cmd("svc wifi $radioAction").exec();
+    Shell.cmd("svc bluetooth $radioAction").exec();
+
+    AppLogger.i('✅ Root toggle executed via Shell.cmd in background: enable=$enable');
+
+    // Show notification
+    try {
+      await NotificationService().showAirplaneModeNotification(
+        enabled: enable,
+        scheduleName: scheduleName,
+      );
+    } catch (e) {
+      AppLogger.e('Failed to show notification', e);
     }
 
-    // Reschedule for next occurrence (keep your existing logic)
+    // Reschedule for next occurrence
     if (params != null) {
       final scheduleId = params['scheduleId'] as String?;
       final daysOfWeekDynamic = params['daysOfWeek'] as List<dynamic>?;
