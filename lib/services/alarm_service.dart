@@ -3,8 +3,9 @@ import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import '../models/schedule_model.dart';
 import 'notification_service.dart';
 import '../utils/logger.dart';
-import 'package:flutter/services.dart'; // if needed
-import 'package:com.topjohnwu.superuser.Shell'; // Make sure this is imported correctly
+import 'package:flutter/services.dart';
+
+static const MethodChannel _channel = MethodChannel('com.airplane.scheduler/airplane_mode');
 
 // Background callback - runs in separate isolate
 @pragma('vm:entry-point')
@@ -15,28 +16,25 @@ void airplaneModeCallback(int id, Map<String, dynamic>? params) async {
 
     AppLogger.i('🔔 Alarm callback triggered: enable=$enable, schedule=$scheduleName');
 
-    // Direct root command using TopJohnWu's libsuperuser (like Acca app)
-    final state = enable ? "1" : "0";
-    final stateBool = enable ? "true" : "false";
-    final radioAction = enable ? "disable" : "enable";
+    // Call toggle via MethodChannel (executes in main process with proper Shell)
+    final success = await _channel.invokeMethod<bool>(
+      'toggleAirplaneMode',
+      {'enable': enable},
+    );
 
-    // Run all commands with root
-    Shell.cmd("settings put global airplane_mode_on $state").exec();
-    Shell.cmd("am broadcast -a android.intent.action.AIRPLANE_MODE_CHANGED --ez state $stateBool").exec();
-    Shell.cmd("svc data $radioAction").exec();
-    Shell.cmd("svc wifi $radioAction").exec();
-    Shell.cmd("svc bluetooth $radioAction").exec();
-
-    AppLogger.i('✅ Root toggle executed via Shell.cmd in background: enable=$enable');
-
-    // Show notification
-    try {
-      await NotificationService().showAirplaneModeNotification(
-        enabled: enable,
-        scheduleName: scheduleName,
-      );
-    } catch (e) {
-      AppLogger.e('Failed to show notification', e);
+    if (success == true) {
+      AppLogger.i('✅ Successfully toggled airplane mode via root (from background)');
+      
+      try {
+        await NotificationService().showAirplaneModeNotification(
+          enabled: enable,
+          scheduleName: scheduleName,
+        );
+      } catch (e) {
+        AppLogger.e('Failed to show notification', e);
+      }
+    } else {
+      AppLogger.w('❌ Failed to toggle airplane mode');
     }
 
     // Reschedule for next occurrence
