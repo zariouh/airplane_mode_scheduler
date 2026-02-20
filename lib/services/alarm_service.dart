@@ -3,21 +3,22 @@ import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import '../models/schedule_model.dart';
 import 'notification_service.dart';
 import '../utils/logger.dart';
-import 'package:flutter/services.dart';
+import 'dart:io'; // For Runtime.exec
 
-// Top-level MethodChannel (no 'static' allowed here)
 const MethodChannel _channel = MethodChannel('com.airplane.scheduler/airplane_mode');
 
 // Background callback - runs in separate isolate
 @pragma('vm:entry-point')
 void airplaneModeCallback(int id, Map<String, dynamic>? params) async {
+  AppLogger.i('🚨 Alarm callback started! ID: $id');  // Extra log to confirm firing
+
   try {
     final enable = params?['enable'] as bool? ?? false;
     final scheduleName = params?['scheduleName'] as String? ?? 'Unknown';
 
     AppLogger.i('🔔 Alarm callback triggered: enable=$enable, schedule=$scheduleName');
 
-    // Call toggle via MethodChannel (executes in main process where Shell is ready)
+    // Call toggle via MethodChannel (executes in main process with root)
     final success = await _channel.invokeMethod<bool>(
       'toggleAirplaneMode',
       {'enable': enable},
@@ -76,6 +77,8 @@ void airplaneModeCallback(int id, Map<String, dynamic>? params) async {
     AppLogger.e('💥 Error in airplane mode callback', e);
     print('Stack trace: $stackTrace');
   }
+
+  AppLogger.i('🚨 Alarm callback ended');  // Extra log to confirm completion
 }
 
 class AlarmService {
