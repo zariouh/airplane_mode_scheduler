@@ -30,7 +30,7 @@ class AirplaneModeManager(private val context: Context) {
                 execRoot("svc data $radioAction")
                 execRoot("svc wifi $radioAction")
                 execRoot("svc bluetooth $radioAction")
-                execRoot("svc telephony $radioAction") // NEW: Disables/enables cellular radio
+                execRoot("svc telephony $radioAction") // Fixes cellular not disabling
 
                 Log.i(TAG, "Root-based airplane mode toggle completed: enable=$enable")
                 return true
