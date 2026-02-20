@@ -5,7 +5,8 @@ import 'notification_service.dart';
 import '../utils/logger.dart';
 import 'package:flutter/services.dart';
 
-static const MethodChannel _channel = MethodChannel('com.airplane.scheduler/airplane_mode');
+// Top-level MethodChannel (no 'static' allowed here)
+const MethodChannel _channel = MethodChannel('com.airplane.scheduler/airplane_mode');
 
 // Background callback - runs in separate isolate
 @pragma('vm:entry-point')
@@ -16,7 +17,7 @@ void airplaneModeCallback(int id, Map<String, dynamic>? params) async {
 
     AppLogger.i('🔔 Alarm callback triggered: enable=$enable, schedule=$scheduleName');
 
-    // Call toggle via MethodChannel (executes in main process with proper Shell)
+    // Call toggle via MethodChannel (executes in main process where Shell is ready)
     final success = await _channel.invokeMethod<bool>(
       'toggleAirplaneMode',
       {'enable': enable},
