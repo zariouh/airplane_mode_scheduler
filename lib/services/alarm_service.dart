@@ -4,14 +4,11 @@ import '../models/schedule_model.dart';
 import 'notification_service.dart';
 import '../utils/logger.dart';
 import 'dart:io'; // For Runtime.exec
-
-const MethodChannel _channel = MethodChannel('com.airplane.scheduler/airplane_mode');
+import 'package:flutter/services.dart'; // For MethodChannel
 
 // Background callback - runs in separate isolate
 @pragma('vm:entry-point')
 void airplaneModeCallback(int id, Map<String, dynamic>? params) async {
-  AppLogger.i('🚨 Alarm callback started! ID: $id');  // Extra log to confirm firing
-
   try {
     final enable = params?['enable'] as bool? ?? false;
     final scheduleName = params?['scheduleName'] as String? ?? 'Unknown';
@@ -77,8 +74,16 @@ void airplaneModeCallback(int id, Map<String, dynamic>? params) async {
     AppLogger.e('💥 Error in airplane mode callback', e);
     print('Stack trace: $stackTrace');
   }
+}
 
-  AppLogger.i('🚨 Alarm callback ended');  // Extra log to confirm completion
+Future<void> execRoot(String command) async {
+  try {
+    final process = await Process.start('su', ['-c', command]);
+    await process.exitCode;
+    // Log output if needed
+  } catch (e) {
+    AppLogger.e('Root exec failed', e);
+  }
 }
 
 class AlarmService {
