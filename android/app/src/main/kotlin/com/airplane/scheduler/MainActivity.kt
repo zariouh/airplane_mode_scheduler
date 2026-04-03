@@ -14,20 +14,16 @@ class MainActivity : FlutterActivity() {
 
     private lateinit var permissionManager: PermissionManager
     private lateinit var airplaneModeManager: AirplaneModeManager
+    private lateinit var alarmScheduler: AlarmScheduler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         initializeRoot()
-        forceRootRequest()   // 🔥 Force popup on launch
+        forceRootRequest()
     }
 
-    /**
-     * Configure libsu
-     */
     private fun initializeRoot() {
         Shell.enableVerboseLogging = false
-
         Shell.setDefaultBuilder(
             Shell.Builder.create()
                 .setFlags(Shell.FLAG_REDIRECT_STDERR)
@@ -35,33 +31,23 @@ class MainActivity : FlutterActivity() {
         )
     }
 
-    /**
-     * This ACTUALLY forces Magisk popup
-     * by executing a real root command.
-     */
     private fun forceRootRequest() {
         Thread {
             try {
                 val result = Shell.cmd("id").exec()
-
                 val isRoot = result.isSuccess &&
                         result.out.any { it.contains("uid=0") }
-
                 if (isRoot) {
                     Log.i("RootCheck", "Root granted")
                 } else {
                     Log.w("RootCheck", "Root denied or not available")
                 }
-
             } catch (e: Exception) {
                 Log.e("RootCheck", "Root request failed", e)
             }
         }.start()
     }
 
-    /**
-     * Actively checks root (not passive)
-     */
     private fun hasRoot(): Boolean {
         val result = Shell.cmd("id").exec()
         return result.isSuccess &&
@@ -73,6 +59,7 @@ class MainActivity : FlutterActivity() {
 
         permissionManager = PermissionManager(this)
         airplaneModeManager = AirplaneModeManager(this)
+        alarmScheduler = AlarmScheduler(this)
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
@@ -110,6 +97,24 @@ class MainActivity : FlutterActivity() {
                     result.success(null)
                 }
 
+                "scheduleAlarm" -> {
+                    val alarmId = call.argument<Int>("alarmId") ?: 0
+                    val hour = call.argument<Int>("hour") ?: 0
+                    val minute = call.argument<Int>("minute") ?: 0
+                    val enable = call.argument<Boolean>("enable") ?: false
+                    val scheduleName = call.argument<String>("scheduleName") ?: ""
+                    @Suppress("UNCHECKED_CAST")
+                    val daysOfWeek = call.argument<List<Boolean>>("daysOfWeek") ?: emptyList()
+                    alarmScheduler.scheduleAlarm(alarmId, hour, minute, daysOfWeek, enable, scheduleName)
+                    result.success(true)
+                }
+
+                "cancelAlarm" -> {
+                    val alarmId = call.argument<Int>("alarmId") ?: 0
+                    alarmScheduler.cancelAlarm(alarmId)
+                    result.success(true)
+                }
+
                 else -> result.notImplemented()
             }
         }
@@ -126,8 +131,12 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
 
-                "hasRootAccess" ->
-                    result.success(hasRoot())
+                "hasRootAccess" -> {
+                    Thread {
+                        val hasRoot = hasRoot()
+                        runOnUiThread { result.success(hasRoot) }
+                    }.start()
+                }
 
                 else -> result.notImplemented()
             }
