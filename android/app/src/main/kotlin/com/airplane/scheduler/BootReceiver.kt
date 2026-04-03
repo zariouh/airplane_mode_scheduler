@@ -5,10 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 
-/**
- * BroadcastReceiver for handling device boot events
- * This receiver launches the app in the background after boot to reschedule alarms
- */
 class BootReceiver : BroadcastReceiver() {
 
     companion object {
@@ -16,28 +12,41 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            Log.i(TAG, "Boot completed - starting app to reschedule alarms")
-            
+        if (intent.action != Intent.ACTION_BOOT_COMPLETED &&
+            intent.action != "android.intent.action.QUICKBOOT_POWERON") return
+
+        Log.i(TAG, "Boot completed - rescheduling alarms natively")
+
+        Thread {
             try {
-                // ✅ IMPROVED: Launch the app in the background
-                // This will trigger main.dart's _rescheduleAllEnabledSchedules()
-                val launchIntent = context.packageManager
-                    .getLaunchIntentForPackage(context.packageName)
-                
-                if (launchIntent != null) {
-                    // Add flags to start the app in background without showing UI
-                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    // Remove FLAG_ACTIVITY_CLEAR_TOP to keep it in background
-                    
-                    context.startActivity(launchIntent)
-                    Log.i(TAG, "App launched successfully for alarm rescheduling")
-                } else {
-                    Log.w(TAG, "Could not get launch intent for app")
+                val db = DatabaseHelper(context)
+                val alarmScheduler = AlarmScheduler(context)
+                val schedules = db.getEnabledSchedules()
+
+                for (schedule in schedules) {
+                    alarmScheduler.scheduleAlarm(
+                        alarmId = schedule.enableAlarmId,
+                        hour = schedule.enableHour,
+                        minute = schedule.enableMinute,
+                        daysOfWeek = schedule.daysOfWeek,
+                        enable = true,
+                        scheduleName = schedule.name
+                    )
+                    alarmScheduler.scheduleAlarm(
+                        alarmId = schedule.disableAlarmId,
+                        hour = schedule.disableHour,
+                        minute = schedule.disableMinute,
+                        daysOfWeek = schedule.daysOfWeek,
+                        enable = false,
+                        scheduleName = schedule.name
+                    )
+                    Log.i(TAG, "Rescheduled: ${schedule.name}")
                 }
+
+                Log.i(TAG, "Rescheduled ${schedules.size} schedules after boot")
             } catch (e: Exception) {
-                Log.e(TAG, "Error launching app on boot", e)
+                Log.e(TAG, "Error rescheduling on boot", e)
             }
-        }
+        }.start()
     }
 }
