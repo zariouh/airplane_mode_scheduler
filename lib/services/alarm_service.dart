@@ -1,40 +1,17 @@
-import 'dart:math';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import '../models/schedule_model.dart';
-import 'notification_service.dart';
 import '../utils/logger.dart';
-import 'dart:io'; // For Runtime.exec
-import 'package:flutter/services.dart'; // For MethodChannel
 
 // Background callback - runs in separate isolate
+// Does NOT use MethodChannel (won't work in background isolate)
+// The actual airplane mode toggle is handled by AlarmReceiver.kt on the native side
 @pragma('vm:entry-point')
 void airplaneModeCallback(int id, Map<String, dynamic>? params) async {
   try {
     final enable = params?['enable'] as bool? ?? false;
     final scheduleName = params?['scheduleName'] as String? ?? 'Unknown';
 
-    AppLogger.i('🔔 Alarm callback triggered: enable=$enable, schedule=$scheduleName');
-
-    // Call toggle via MethodChannel (executes in main process with root)
-    final success = await _channel.invokeMethod<bool>(
-      'toggleAirplaneMode',
-      {'enable': enable},
-    );
-
-    if (success == true) {
-      AppLogger.i('✅ Successfully toggled airplane mode via root (from background)');
-      
-      try {
-        await NotificationService().showAirplaneModeNotification(
-          enabled: enable,
-          scheduleName: scheduleName,
-        );
-      } catch (e) {
-        AppLogger.e('Failed to show notification', e);
-      }
-    } else {
-      AppLogger.w('❌ Failed to toggle airplane mode');
-    }
+    AppLogger.i('Alarm callback triggered: enable=$enable, schedule=$scheduleName');
 
     // Reschedule for next occurrence
     if (params != null) {
@@ -44,12 +21,13 @@ void airplaneModeCallback(int id, Map<String, dynamic>? params) async {
       final minute = params['minute'] as int?;
       final alarmId = params['alarmId'] as int?;
 
-      if (scheduleId != null && daysOfWeekDynamic != null && hour != null && minute != null && alarmId != null) {
+      if (scheduleId != null && daysOfWeekDynamic != null &&
+          hour != null && minute != null && alarmId != null) {
         final daysOfWeek = daysOfWeekDynamic.map((e) => e as bool).toList();
 
         final now = DateTime.now();
-        var nextTime = DateTime(now.year, now.month, now.day, hour, minute);
-        nextTime = nextTime.add(const Duration(days: 1));
+        var nextTime = DateTime(now.year, now.month, now.day, hour, minute)
+            .add(const Duration(days: 1));
 
         while (!daysOfWeek[nextTime.weekday - 1]) {
           nextTime = nextTime.add(const Duration(days: 1));
@@ -66,32 +44,20 @@ void airplaneModeCallback(int id, Map<String, dynamic>? params) async {
         );
 
         if (rescheduled) {
-          AppLogger.i('📅 Rescheduled alarm $alarmId for $nextTime');
+          AppLogger.i('Rescheduled alarm $alarmId for $nextTime');
         }
       }
     }
   } catch (e, stackTrace) {
-    AppLogger.e('💥 Error in airplane mode callback', e);
+    AppLogger.e('Error in airplane mode callback', e);
     print('Stack trace: $stackTrace');
   }
 }
 
-Future<void> execRoot(String command) async {
-  try {
-    final process = await Process.start('su', ['-c', command]);
-    await process.exitCode;
-    // Log output if needed
-  } catch (e) {
-    AppLogger.e('Root exec failed', e);
-  }
-}
-
 class AlarmService {
-  // Schedule airplane mode toggle for a schedule
   Future<void> scheduleAirplaneModeToggle(Schedule schedule) async {
     try {
-      AppLogger.i('📋 Scheduling airplane mode toggles for: ${schedule.name}');
-
+      AppLogger.i('Scheduling airplane mode toggles for: ${schedule.name}');
       await cancelScheduleAlarms(schedule.id);
 
       final enableAlarmId = _generateAlarmId(schedule.id, true);
@@ -116,7 +82,7 @@ class AlarmService {
         scheduleName: schedule.name,
       );
 
-      AppLogger.i('✅ Successfully scheduled alarms for: ${schedule.name}');
+      AppLogger.i('Successfully scheduled alarms for: ${schedule.name}');
     } catch (e) {
       AppLogger.e('Error scheduling airplane mode toggles', e);
     }
@@ -124,13 +90,9 @@ class AlarmService {
 
   Future<void> cancelScheduleAlarms(String scheduleId) async {
     try {
-      final enableAlarmId = _generateAlarmId(scheduleId, true);
-      final disableAlarmId = _generateAlarmId(scheduleId, false);
-
-      await AndroidAlarmManager.cancel(enableAlarmId);
-      await AndroidAlarmManager.cancel(disableAlarmId);
-
-      AppLogger.i('🗑️ Cancelled alarms for schedule: $scheduleId');
+      await AndroidAlarmManager.cancel(_generateAlarmId(scheduleId, true));
+      await AndroidAlarmManager.cancel(_generateAlarmId(scheduleId, false));
+      AppLogger.i('Cancelled alarms for schedule: $scheduleId');
     } catch (e) {
       AppLogger.e('Error cancelling alarms', e);
     }
@@ -152,7 +114,6 @@ class AlarmService {
       if (scheduledTime.isBefore(now)) {
         scheduledTime = scheduledTime.add(const Duration(days: 1));
       }
-
       while (!daysOfWeek[scheduledTime.weekday - 1]) {
         scheduledTime = scheduledTime.add(const Duration(days: 1));
       }
@@ -176,7 +137,7 @@ class AlarmService {
       );
 
       if (success) {
-        AppLogger.i('⏰ Scheduled alarm $id at $scheduledTime, enable: $enableAirplaneMode');
+        AppLogger.i('Scheduled alarm $id at $scheduledTime, enable: $enableAirplaneMode');
       }
     } catch (e) {
       AppLogger.e('Error scheduling daily alarm', e);
