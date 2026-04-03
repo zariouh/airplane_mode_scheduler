@@ -4,8 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import android.util.Log
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import com.topjohnwu.superuser.Shell
 
 class AirplaneModeManager(private val context: Context) {
 
@@ -18,53 +17,44 @@ class AirplaneModeManager(private val context: Context) {
             val stateBool = if (enable) "true" else "false"
             val radioAction = if (enable) "disable" else "enable"
 
-            try {
-                // 1. Set global airplane mode setting (affects UI/notification)
+            return try {
+                // 1. Set global setting
                 execRoot("settings put global airplane_mode_on $state")
 
-                // 2. Send the airplane mode broadcast via root shell
-                val broadcastCmd = "am broadcast -a android.intent.action.AIRPLANE_MODE_CHANGED --ez state $stateBool"
-                execRoot(broadcastCmd)
+                // 2. Send the CORRECT trigger broadcast (not AIRPLANE_MODE_CHANGED)
+                execRoot("am broadcast -a android.intent.action.AIRPLANE_MODE --ez state $stateBool")
 
-                // 3. Force-disable/enable radios (added telephony for calls/SIM)
-                execRoot("svc data $radioAction")
+                // 3. Toggle radios — only valid svc commands
                 execRoot("svc wifi $radioAction")
+                execRoot("svc data $radioAction")
                 execRoot("svc bluetooth $radioAction")
-                execRoot("svc telephony $radioAction") // Fixes cellular not disabling
+                // No "svc telephony" — it doesn't exist; broadcast handles cellular
 
-                Log.i(TAG, "Root-based airplane mode toggle completed: enable=$enable")
-                return true
+                Log.i(TAG, "Airplane mode toggled via root: enable=$enable")
+                true
             } catch (e: Exception) {
                 Log.e(TAG, "Root-based toggle failed", e)
-                return false
+                false
             }
         }
 
         private fun execRoot(command: String) {
-            try {
-                val process = Runtime.getRuntime().exec(arrayOf("su", "-c", command))
-                // Capture output and error
-                val output = BufferedReader(InputStreamReader(process.inputStream)).readText()
-                val error = BufferedReader(InputStreamReader(process.errorStream)).readText()
-                process.waitFor()
-                val exitCode = process.exitValue()
-                if (exitCode == 0) {
-                    if (output.isNotBlank()) {
-                        Log.d(TAG, "Root command output: $output")
-                    }
-                } else {
-                    Log.e(TAG, "Root command failed (exit $exitCode) → $command")
-                    if (error.isNotBlank()) Log.e(TAG, "Error: $error")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to run root command: $command", e)
+            val result = Shell.cmd(command).exec()
+            if (!result.isSuccess) {
+                Log.e(TAG, "Root command failed → $command")
+                result.err.forEach { Log.e(TAG, "stderr: $it") }
+            } else {
+                result.out.forEach { Log.d(TAG, "stdout: $it") }
             }
         }
 
         @JvmStatic
         fun isAirplaneModeOnStatic(context: Context): Boolean {
             return try {
-                Settings.Global.getInt(context.contentResolver, Settings.Global.AIRPLANE_MODE_ON) == 1
+                Settings.Global.getInt(
+                    context.contentResolver,
+                    Settings.Global.AIRPLANE_MODE_ON
+                ) == 1
             } catch (e: Exception) {
                 Log.w(TAG, "Could not read airplane mode state", e)
                 false
@@ -72,30 +62,21 @@ class AirplaneModeManager(private val context: Context) {
         }
     }
 
-    fun toggleAirplaneMode(enable: Boolean): Boolean {
-        return toggleAirplaneModeStatic(context, enable)
-    }
+    fun toggleAirplaneMode(enable: Boolean): Boolean =
+        toggleAirplaneModeStatic(context, enable)
 
-    fun isAirplaneModeOn(): Boolean {
-        return isAirplaneModeOnStatic(context)
-    }
+    fun isAirplaneModeOn(): Boolean =
+        isAirplaneModeOnStatic(context)
 
     fun openAirplaneModeSettings() {
         try {
-            val intent = Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error opening airplane mode settings", e)
-            try {
-                val intent = Intent(Settings.ACTION_WIRELESS_SETTINGS).apply {
+            context.startActivity(
+                Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
-                context.startActivity(intent)
-            } catch (e2: Exception) {
-                Log.e(TAG, "Fallback to wireless settings failed", e2)
-            }
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error opening airplane mode settings", e)
         }
     }
 }
