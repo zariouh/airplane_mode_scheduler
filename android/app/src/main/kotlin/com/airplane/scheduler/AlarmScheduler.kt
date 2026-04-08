@@ -51,6 +51,10 @@ class AlarmScheduler(private val context: Context) {
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             putExtra(AlarmReceiver.EXTRA_ENABLE, enable)
             putExtra(AlarmReceiver.EXTRA_SCHEDULE_NAME, scheduleName)
+            putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
+            putExtra(AlarmReceiver.EXTRA_HOUR, hour)
+            putExtra(AlarmReceiver.EXTRA_MINUTE, minute)
+            putExtra(AlarmReceiver.EXTRA_DAYS_OF_WEEK, daysOfWeek.joinToString(","))
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
