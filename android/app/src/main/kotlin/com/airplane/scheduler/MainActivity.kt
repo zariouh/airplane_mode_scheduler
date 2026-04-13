@@ -19,6 +19,13 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initializeRoot()
+        // Root request moved to onFlutterUiDisplayed — don't request here
+    }
+
+    override fun onFlutterUiDisplayed() {
+        super.onFlutterUiDisplayed()
+        // Flutter UI is fully visible and window is focused
+        // Magisk popup will now appear reliably on first launch
         forceRootRequest()
     }
 
