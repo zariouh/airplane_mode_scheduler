@@ -15,20 +15,13 @@ class AirplaneModeManager(private val context: Context) {
         fun toggleAirplaneModeStatic(context: Context, enable: Boolean): Boolean {
             val state = if (enable) "1" else "0"
             val stateBool = if (enable) "true" else "false"
-            val radioAction = if (enable) "disable" else "enable"
 
             return try {
                 // 1. Set global setting
                 execRoot("settings put global airplane_mode_on $state")
 
-                // 2. Send the CORRECT trigger broadcast (not AIRPLANE_MODE_CHANGED)
+                // 2. Send trigger broadcast — system restores wifi/bluetooth state automatically
                 execRoot("am broadcast -a android.intent.action.AIRPLANE_MODE --ez state $stateBool")
-
-                // 3. Toggle radios — only valid svc commands
-                execRoot("svc wifi $radioAction")
-                execRoot("svc data $radioAction")
-                execRoot("svc bluetooth $radioAction")
-                // No "svc telephony" — it doesn't exist; broadcast handles cellular
 
                 Log.i(TAG, "Airplane mode toggled via root: enable=$enable")
                 true
